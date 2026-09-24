@@ -1,1 +1,11 @@
-<Solution />
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/Application/" />
+  <Folder Name="/src/Domain/" />
+  <Folder Name="/src/Infrastructure/">
+    <Project Path="ToDo.Intrastructure/ToDo.Intrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Presentation/">
+    <Project Path="ToDo.Api/ToDo.Api.csproj" />
+  </Folder>
+</Solution>
