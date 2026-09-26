@@ -1,7 +1,13 @@
 <Solution>
-  <Folder Name="/src/" />
-  <Folder Name="/src/Application/" />
-  <Folder Name="/src/Domain/" />
+  <Folder Name="/src/">
+    <File Path="Notes.txt" />
+  </Folder>
+  <Folder Name="/src/Application/">
+    <Project Path="ToDo.Application/ToDo.Application.csproj" Id="42ffbc27-4ff3-4e7b-b477-8962dab9fb60" />
+  </Folder>
+  <Folder Name="/src/Domain/">
+    <Project Path="ToDo.Domain/ToDo.Domain.csproj" Id="e834615e-e1e0-4bd7-acca-ddb83519c84d" />
+  </Folder>
   <Folder Name="/src/Infrastructure/">
     <Project Path="ToDo.Intrastructure/ToDo.Intrastructure.csproj" />
   </Folder>
