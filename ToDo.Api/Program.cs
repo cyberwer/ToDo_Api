@@ -1,4 +1,12 @@
 
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.Extensions.Http.Resilience;
+using System.Text;
+using ToDo.Application.Constants;
+using Polly;
+using System.Threading.RateLimiting;
+
 namespace ToDo.Api
 {
 	public class Program
@@ -11,6 +19,136 @@ namespace ToDo.Api
 
 			builder.Services.AddControllers();
 			// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+
+
+			builder.Services.AddStackExchangeRedisCache(options =>
+			{
+
+				options.Configuration = "127.0.0.1:6379";
+				options.InstanceName = "redis-instance";
+			});
+
+			builder.Services.AddHttpContextAccessor();
+
+			builder.Services.AddHttpClient(
+				   ApplicationConstants.EmailServiceClient,
+				   client =>
+				   {
+					   client.BaseAddress = new Uri(
+						   builder.Configuration.GetSection(
+							   "EmailService:BaseUrl").Value!);
+				   })
+			   //.AddStandardResilienceHandler();
+			   .AddResilienceHandler("retry", (pipeline, context) =>
+			   {
+				   var loggerFactory = context.ServiceProvider?.GetService<ILoggerFactory>();
+				   var logger = loggerFactory?.CreateLogger("EmailServiceResilience");
+
+
+				   // 1. RATE LIMITER (Outermost - Control request flow)
+				   pipeline.AddRateLimiter(new HttpRateLimiterStrategyOptions
+				   {
+					   // Define the RateLimiter algorithm
+					   DefaultRateLimiterOptions = new ConcurrencyLimiterOptions
+					   {
+						   PermitLimit = 10,        // Maximum 10 concurrent HTTP requests active at once
+						   QueueLimit = 5,          // Up to 5 additional requests can wait in queue
+						   QueueProcessingOrder = QueueProcessingOrder.OldestFirst
+					   },
+					   OnRejected = args =>
+					   {
+						   logger.LogWarning("[RateLimiter] Request rejected! Concurrency/Queue limit exceeded.");
+						   return ValueTask.CompletedTask;
+					   }
+				   });
+
+				   // 2. TOTAL REQUEST TIMEOUT (Global cap across all retries)
+				   pipeline.AddTimeout(new HttpTimeoutStrategyOptions
+				   {
+					   Timeout = TimeSpan.FromSeconds(30),
+					   OnTimeout = args =>
+					   {
+						   logger.LogError("[TotalTimeout] Entire operation exceeded global deadline of {Timeout}s.",
+							   args.Timeout.TotalSeconds);
+						   return ValueTask.CompletedTask;
+					   }
+				   });
+
+				   // 3. RETRY (Recover from transient failures)
+				   pipeline.AddRetry(new HttpRetryStrategyOptions
+				   {
+					   MaxRetryAttempts = 3,
+					   Delay = TimeSpan.FromSeconds(2),
+					   UseJitter = true,
+					   BackoffType = DelayBackoffType.Exponential,
+					   OnRetry = args =>
+					   {
+						   // Log as Warning (not Error), because a retry means we are still attempting to recover
+						   logger?.LogWarning(
+							   "Retry attempt {Attempt}. Delay: {Delay}ms. Cause: {Reason}",
+							   args.AttemptNumber + 1,
+							   args.RetryDelay.TotalMilliseconds,
+							   args.Outcome.Exception?.Message ?? args.Outcome.Result?.StatusCode.ToString());
+
+						   return ValueTask.CompletedTask;
+					   }
+				   });
+
+				   // 4. CIRCUIT BREAKER (Evaluates EACH individual attempt inside the retry loop)
+				   pipeline.AddCircuitBreaker(new HttpCircuitBreakerStrategyOptions
+				   {
+					   FailureRatio = 0.5,
+					   MinimumThroughput = 3,
+					   SamplingDuration = TimeSpan.FromSeconds(30),
+					   BreakDuration = TimeSpan.FromSeconds(10),
+					   OnOpened = args =>
+					   {
+						   logger.LogCritical("[CircuitBreaker] Circuit TRIPPED OPEN for {BreakDuration}s due to high failure rate.",
+							   args.BreakDuration.TotalSeconds);
+						   return ValueTask.CompletedTask;
+					   },
+					   OnClosed = args =>
+					   {
+						   logger.LogInformation("[CircuitBreaker] Circuit CLOSED. Service recovered.");
+						   return ValueTask.CompletedTask;
+					   },
+					   OnHalfOpened = args =>
+					   {
+						   logger.LogInformation("[CircuitBreaker] Circuit HALF-OPEN. Testing service health with next request...");
+						   return ValueTask.CompletedTask;
+					   }
+				   });
+
+				   // 5. ATTEMPT TIMEOUT (Innermost - Stops a single hanging network attempt after 10s)
+				   pipeline.AddTimeout(new HttpTimeoutStrategyOptions
+				   {
+					   Timeout = TimeSpan.FromSeconds(10),
+					   OnTimeout = args =>
+					   {
+						   logger.LogWarning("[AttemptTimeout] Single HTTP request attempt timed out after {Timeout}s.",
+							   args.Timeout.TotalSeconds);
+						   return ValueTask.CompletedTask;
+					   }
+				   });
+			   });
+
+
+			//JWT Auth
+			builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+				.AddJwtBearer(options =>
+				{
+					options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters()
+					{
+						IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration.GetSection("Jwt:Secret").Value)),
+						ValidIssuer = builder.Configuration.GetSection("Jwt:Issuer").Value,
+						ValidAudience = builder.Configuration.GetSection("Jwt:Audience").Value,
+						ValidateAudience = true,
+						ValidateIssuer = true,
+						ClockSkew = TimeSpan.Zero
+					};
+				});					
+
+
 			//DI Class
 			builder.Services.AddInfrastructure(builder.Configuration);
 			builder.Services.AddApplication();
@@ -32,6 +170,7 @@ namespace ToDo.Api
 
 			app.UseHttpsRedirection();
 
+			app.UseAuthentication();
 			app.UseAuthorization();
 
 

@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using ToDo.Application.Contracts;
 
 
 namespace ToDo.Intrastructure.Persistence.Entities
@@ -6,7 +7,7 @@ namespace ToDo.Intrastructure.Persistence.Entities
 	public class AppDbContext : DbContext
 	{
 
-		//rivate readonly ICurrentUserService _currentUser;
+		private readonly ICurrentUserService _currentUser;
 		public AppDbContext(
 		   DbContextOptions<AppDbContext> options //ICurrentUserService currentUser
 			) : base(options)
@@ -14,41 +15,41 @@ namespace ToDo.Intrastructure.Persistence.Entities
 			//_currentUser = currentUser;
 		}
 
-		//public override int SaveChanges(bool acceptAllChangesOnSuccess)
-		//{
-		//	ApplyAuditConfig();
-		//	return base.SaveChanges(acceptAllChangesOnSuccess);
-		//}
+		public override int SaveChanges(bool acceptAllChangesOnSuccess)
+		{
+			ApplyAuditConfig();
+			return base.SaveChanges(acceptAllChangesOnSuccess);
+		}
 
-		//public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = new CancellationToken())
-		//{
-		//	ApplyAuditConfig();
-		//	return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
-		//}
+		public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = new CancellationToken())
+		{
+			ApplyAuditConfig();
+			return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+		}
 
 
-		//private void ApplyAuditConfig()
-		//{
-		//	var entries = ChangeTracker
-		//		.Entries<BaseAuditableEntity>();
+		private void ApplyAuditConfig()
+		{
+			var entries = ChangeTracker
+				.Entries<BaseAuditableEntity>();
 
-		//	foreach (var entry in entries)
-		//	{
-		//		if (entry.State == EntityState.Added)
-		//		{
-		//			entry.Entity.CreatedAt = DateTime.UtcNow;
-		//			entry.Entity.CreatedBy
-		//				= _currentUser.GetCurrentUserId() ?? "system";
-		//		}
+			foreach (var entry in entries)
+			{
+				if (entry.State == EntityState.Added)
+				{
+					entry.Entity.CreatedAt = DateTime.UtcNow;
+					entry.Entity.CreatedBy
+						= _currentUser.GetCurrentUserId() ?? "system";
+				}
 
-		//		if (entry.State == EntityState.Modified)
-		//		{
-		//			entry.Entity.UpdatedAt = DateTime.UtcNow;
-		//			entry.Entity.UpdatedBy
-		//				= _currentUser.GetCurrentUserId() ?? "system";
-		//		}
-		//	}
-		//}
+				if (entry.State == EntityState.Modified)
+				{
+					entry.Entity.UpdatedAt = DateTime.UtcNow;
+					entry.Entity.UpdatedBy
+						= _currentUser.GetCurrentUserId() ?? "system";
+				}
+			}
+		}
 
 		protected override void OnModelCreating(ModelBuilder modelBuilder)
 		{
@@ -102,6 +103,8 @@ namespace ToDo.Intrastructure.Persistence.Entities
 		public DbSet<TodoItemTag> ToDoItemTags { get; set; }
 		public DbSet<Comment> Comments { get; set; }
 		public DbSet<ActivityLog> ActivityLogs { get; set; }
+		public DbSet<RefreshToken> RefreshTokens { get; set; }
+		
 
 	}
 

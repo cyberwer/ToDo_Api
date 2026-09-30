@@ -4,13 +4,19 @@ using ToDo.Domain.DomainEntities;
 
 namespace ToDo.Application.Mapper
 {
-	public class UserMappingExtension : Profile
+	public static class UserMappingExtension
 	{
-		public UserMappingExtension()
+		extension(CreateUserDTO user)
 		{
-			//get the password has from the password
-			CreateMap<CreateUserDTO, UserDomain>()
-				.ForMember(dest => dest.PasswordHash, opt => opt.MapFrom(src => src.password));
+			public UserDomain ToUserDomain()
+			{
+				return new UserDomain()
+				{
+					Email = user.Email,
+					FullName = user.FullName,
+					PasswordHash = user.Password
+				};
+			}
 		}
 	}
 }

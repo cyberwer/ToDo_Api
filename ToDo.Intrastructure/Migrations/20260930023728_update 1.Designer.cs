@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ToDo.Intrastructure.Persistence.Entities;
 
@@ -11,9 +12,11 @@ using ToDo.Intrastructure.Persistence.Entities;
 namespace ToDo.Intrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260930023728_update 1")]
+    partial class update1
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -95,56 +98,6 @@ namespace ToDo.Intrastructure.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("Comments");
-                });
-
-            modelBuilder.Entity("ToDo.Intrastructure.Persistence.Entities.RefreshToken", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CreatedBy")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CreatedByIp")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("ExpiresAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid?>("ReplacedByTokenId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime?>("RevokedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("RevokedByIp")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Token")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ReplacedByTokenId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("RefreshTokens");
                 });
 
             modelBuilder.Entity("ToDo.Intrastructure.Persistence.Entities.Tag", b =>
@@ -349,23 +302,6 @@ namespace ToDo.Intrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("ToDo.Intrastructure.Persistence.Entities.RefreshToken", b =>
-                {
-                    b.HasOne("ToDo.Intrastructure.Persistence.Entities.RefreshToken", "ReplacedByToken")
-                        .WithMany("ReplacementTokens")
-                        .HasForeignKey("ReplacedByTokenId");
-
-                    b.HasOne("ToDo.Intrastructure.Persistence.Entities.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("ReplacedByToken");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("ToDo.Intrastructure.Persistence.Entities.TodoItem", b =>
                 {
                     b.HasOne("ToDo.Intrastructure.Persistence.Entities.TodoList", "TodoList")
@@ -405,11 +341,6 @@ namespace ToDo.Intrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("ToDo.Intrastructure.Persistence.Entities.RefreshToken", b =>
-                {
-                    b.Navigation("ReplacementTokens");
                 });
 
             modelBuilder.Entity("ToDo.Intrastructure.Persistence.Entities.Tag", b =>
