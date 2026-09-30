@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Caching.Memory;
 using System.Text.Json;
 using ToDo.Api.Extensions;
 using ToDo.Application.Contracts;
@@ -12,19 +13,21 @@ namespace ToDo.Api.Controllers
 {
 	[Route("api/[controller]")]
 	[ApiController]
-	[Authorize]
+	//[Authorize]
 	public class TodoController : ControllerBase
 	{
 		private readonly ITodoService _todoService;
 		private readonly ILogger<TodoController> logger;
 		private readonly IDistributedCache distributedCache;
+		private readonly IMemoryCache memoryCache;
 
 		public TodoController(
-			ITodoService todoService, ILogger<TodoController> logger, IDistributedCache distributedCache)
+			ITodoService todoService, ILogger<TodoController> logger, IDistributedCache distributedCache, IMemoryCache memoryCache)
 		{
 			this._todoService = todoService;
 			this.logger = logger;
 			this.distributedCache = distributedCache;
+			this.memoryCache = memoryCache;
 		}
 
 
@@ -33,8 +36,7 @@ namespace ToDo.Api.Controllers
 		{
 			logger.LogInformation($"Executing GET method inside a TodoController at {DateTime.Now}");
 
-			var cache
-				 = await distributedCache.GetStringAsync("todo");
+			var cache = await distributedCache.GetStringAsync("todo");
 
 
 			if (!string.IsNullOrEmpty(cache) && cache != "[]")

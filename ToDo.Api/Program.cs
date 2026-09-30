@@ -28,8 +28,10 @@ namespace ToDo.Api
 				//options.AddSeq();
 			});
 
-			// builder.Services.AddMemoryCache();
-
+			//In memory cache, the data is stored in the memory of the web server. This means that if the application restarts or if there are multiple instances of the application running
+			//(like in a load-balanced environment), the cached data will be lost or inconsistent across instances.
+			
+			builder.Services.AddMemoryCache();
 
 			builder.Services.AddStackExchangeRedisCache(options =>
 			{
