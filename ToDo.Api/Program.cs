@@ -1,11 +1,12 @@
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.Extensions.Http.Resilience;
-using System.Text;
-using ToDo.Application.Constants;
+using Microsoft.IdentityModel.Tokens;
 using Polly;
+using System.Text;
+using System.Text.Json;
 using System.Threading.RateLimiting;
+using ToDo.Application.Constants;
 
 namespace ToDo.Api
 {
@@ -169,6 +170,33 @@ namespace ToDo.Api
 			}
 
 			app.UseHttpsRedirection();
+
+			app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions()
+			{
+				ResponseWriter = async (context, report) =>
+				{
+					context.Response.ContentType = "application/json";
+					var response
+					 = new
+					 {
+						 status = report.Status.ToString(),
+						 totalDuration = report.TotalDuration.TotalMilliseconds,
+						 checks = report.Entries.Select(entry => new
+						 {
+							 name = entry.Key,
+							 status = entry.Value.Status.ToString(),
+							 duration = entry.Value.Duration.TotalMilliseconds,
+							 description = entry.Value.Description,
+						 })
+					 };
+
+
+						await context.Response.WriteAsync(JsonSerializer.Serialize(response, new JsonSerializerOptions
+						{
+							WriteIndented = true
+						}));
+				}
+			});
 
 			app.UseAuthentication();
 			app.UseAuthorization();

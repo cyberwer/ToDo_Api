@@ -21,7 +21,10 @@ namespace ToDo.Api
 				options.UseSqlServer(configuruation.GetConnectionString("LocalDbConnection"));
 			});
 
-			services.AddAutoMapper(typeof(InfraAssemblyMaker).Assembly); //register automaer on at ingra layer
+			services.AddHealthChecks().AddDbContextCheck<AppDbContext>();
+
+			//register automaer on at ingra layer
+			services.AddAutoMapper(typeof(InfraAssemblyMaker).Assembly); 
 
 			//Repository DI
 			services.AddScoped<IUserRepository, UserRepository>();
