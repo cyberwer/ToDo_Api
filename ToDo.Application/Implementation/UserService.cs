@@ -6,7 +6,7 @@ using ToDo.Domain.RepositoryInterface;
 
 namespace ToDo.Application.Implementation
 {
-	public class UserService(IUserRepository userRepository, IMapper mapper) : IUserService
+	public class UserService(IUserRepository userRepository) : IUserService
 	{
 		//this conts method can be replaces by adding DI (IUserRepository userRepository) in the class level  NET 10
 
@@ -19,15 +19,21 @@ namespace ToDo.Application.Implementation
 		public async Task<bool> CreateUserAsync(CreateUserDTO userDTO)
 		{
 			// get password hash from password (use BCRYPT nuget package)
-			var userDomain = mapper.Map<UserDomain>(userDTO);
-			userDomain.PasswordHash =  BCrypt.Net.BCrypt.HashPassword(userDomain.PasswordHash);
+			//var userDomain = mapper.Map<UserDomain>(userDTO);
+			//userDomain.PasswordHash =  BCrypt.Net.BCrypt.HashPassword(userDomain.PasswordHash);
+
+			var userDomain = new UserDomain
+			{
+				Id = Guid.NewGuid(),
+				FullName = userDTO.FullName,
+				Email = userDTO.Email,
+				PasswordHash = BCrypt.Net.BCrypt.HashPassword(userDTO.Password)
+			};
 
 			//convert DTO to Domain
 			await userRepository.AddAsync(userDomain);
 
-			var response = await userRepository.CommitAsync();
-
-			return response > 0;
+			return await userRepository.CommitAsync() > 0;			
 
 		}
 
